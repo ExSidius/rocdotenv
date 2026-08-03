@@ -4,8 +4,8 @@ The JSON contract suite is intentionally pure: all tests use explicit strings
 and key/value lists instead of reading files or mutating the process
 environment.
 
-These upstream `godotenv` behaviors still need a dedicated design before they
-become executable contract cases:
+These upstream `godotenv` behaviors are now modeled as executable pure contract
+cases in `test/cases/io.json`:
 
 - `Load()` and `Overload()` default to `.env` when no file names are supplied.
 - Missing files return errors.
@@ -15,6 +15,5 @@ become executable contract cases:
 - Actual process environment values can be used as a fallback for variable
   expansion.
 
-For the Roc package, these should probably be modeled with an explicit fake file
-system and explicit environment input/output first, then adapted to a platform
-or CLI app later.
+The remaining deferred work is adapting those pure semantics to real
+file-system and process-environment effects through a Roc platform or CLI app.

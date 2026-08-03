@@ -2,6 +2,9 @@
 
 An early Roc port of `godotenv`.
 
+See `DESIGN.md` for the compatibility target, parser architecture, and package
+design notes.
+
 ## Local Roc Environment
 
 This repo uses a local Roc compiler under `.tools/` and exposes it through
@@ -32,7 +35,8 @@ The compatibility test corpus lives in JSON under `test/cases/`. These files are
 the source of truth and are intentionally independent of the current Roc API.
 The corpus currently covers parser, marshal, pure load/apply, and roundtrip
 cases translated from upstream `godotenv`.
-Deferred file-system and process-environment behavior is tracked in
+Fake file-system and process-environment behavior is covered by
+`test/cases/io.json`; real platform adapters are tracked in
 `test/cases/deferred-io.md`.
 
 Generate the Roc adapter tests with:
@@ -44,9 +48,8 @@ roc test ContractTest.roc
 ```
 
 `ContractTest.roc` is generated from the JSON cases and adapts them to the
-current `Dotenv` module shape. It is expected to fail until the parser and
-marshaller are implemented. With the current stubs, the generated suite has 91
-expectations: 90 expected failures and 1 passing harness utility case.
+current `Dotenv` module shape. The generated suite currently has 100
+expectations.
 
 ## Package Checks
 
@@ -57,8 +60,9 @@ roc check main.roc
 roc docs main.roc
 ```
 
-The public module is intentionally stubbed while the failing contract tests drive
-the design of the parser and marshaller.
+The public module is implemented against the pure contract suite. File-system
+and process-environment behavior is modeled with explicit fake inputs; real I/O
+adapters remain deferred.
 
 ## License
 
