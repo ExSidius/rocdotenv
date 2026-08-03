@@ -1,0 +1,46 @@
+[
+  {
+    "name": "merges parsed files in order",
+    "operation": "mergeParsedFiles",
+    "files": [
+      [{ "key": "OPTION_A", "value": "1" }],
+      [{ "key": "OPTION_B", "value": "2" }]
+    ],
+    "expected": [
+      { "key": "OPTION_A", "value": "1" },
+      { "key": "OPTION_B", "value": "2" }
+    ]
+  },
+  {
+    "name": "preserves existing env without override",
+    "operation": "applyParsedEnv",
+    "policy": "PreserveExisting",
+    "parsedEnv": [
+      { "key": "OPTION_A", "value": "1" },
+      { "key": "OPTION_B", "value": "2" }
+    ],
+    "existingEnv": [
+      { "key": "OPTION_A", "value": "do_not_override" }
+    ],
+    "expected": [
+      { "key": "OPTION_A", "value": "do_not_override" },
+      { "key": "OPTION_B", "value": "2" }
+    ]
+  },
+  {
+    "name": "overrides existing env with override policy",
+    "operation": "applyParsedEnv",
+    "policy": "OverrideExisting",
+    "parsedEnv": [
+      { "key": "OPTION_A", "value": "1" }
+    ],
+    "existingEnv": [
+      { "key": "OPTION_A", "value": "do_not_override" },
+      { "key": "OPTION_B", "value": "keep" }
+    ],
+    "expected": [
+      { "key": "OPTION_B", "value": "keep" },
+      { "key": "OPTION_A", "value": "1" }
+    ]
+  }
+]

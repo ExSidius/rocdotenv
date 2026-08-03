@@ -1,0 +1,468 @@
+[
+  {
+    "name": "parses unquoted assignment",
+    "input": "FOO=bar",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar" }]
+  },
+  {
+    "name": "trims whitespace around equals",
+    "input": "FOO =bar",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar" }]
+  },
+  {
+    "name": "trims whitespace before value",
+    "input": "FOO= bar",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar" }]
+  },
+  {
+    "name": "parses yaml-style assignment",
+    "input": "OPTION_A: 1",
+    "existingEnv": [],
+    "expected": [{ "key": "OPTION_A", "value": "1" }]
+  },
+  {
+    "name": "keeps equals signs inside yaml-style values",
+    "input": "OPTION_A: Foo=bar",
+    "existingEnv": [],
+    "expected": [{ "key": "OPTION_A", "value": "Foo=bar" }]
+  },
+  {
+    "name": "keeps colons inside equals-style values",
+    "input": "OPTION_A=1:B",
+    "existingEnv": [],
+    "expected": [{ "key": "OPTION_A", "value": "1:B" }]
+  },
+  {
+    "name": "parses export keyword",
+    "input": "export OPTION_A=2",
+    "existingEnv": [],
+    "expected": [{ "key": "OPTION_A", "value": "2" }]
+  },
+  {
+    "name": "parses tab after export keyword",
+    "input": "export\tOPTION_A=2",
+    "existingEnv": [],
+    "expected": [{ "key": "OPTION_A", "value": "2" }]
+  },
+  {
+    "name": "allows dots in key names",
+    "input": "FOO.BAR=foobar",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO.BAR", "value": "foobar" }]
+  },
+  {
+    "name": "allows hyphens in key names",
+    "input": "OPTION-B=def",
+    "existingEnv": [],
+    "expected": [{ "key": "OPTION-B", "value": "def" }]
+  },
+  {
+    "name": "keeps trailing equals signs in values",
+    "input": "FOO=foobar=",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "foobar=" }]
+  },
+  {
+    "name": "ignores inline comments after whitespace",
+    "input": "FOO=bar # this is foo",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar" }]
+  },
+  {
+    "name": "keeps hash characters in double quoted values",
+    "input": "FOO=\"bar#baz\" # comment",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar#baz" }]
+  },
+  {
+    "name": "keeps hash characters in single quoted values",
+    "input": "FOO='bar#baz' # comment",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar#baz" }]
+  },
+  {
+    "name": "expands escaped newline in double quoted values",
+    "input": "FOO=\"bar\\nbaz\"",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar\nbaz" }]
+  },
+  {
+    "name": "unescapes escaped double quotes",
+    "input": "FOO=\"escaped\\\"bar\"",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "escaped\"bar" }]
+  },
+  {
+    "name": "does not let trailing escaped backslash escape closing quote",
+    "input": "FOO=\"bar\\\\\"",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar\\" }]
+  },
+  {
+    "name": "trims leading whitespace before key",
+    "input": " KEY =value",
+    "existingEnv": [],
+    "expected": [{ "key": "KEY", "value": "value" }]
+  },
+  {
+    "name": "trims leading tab before key",
+    "input": "\tKEY=value",
+    "existingEnv": [],
+    "expected": [{ "key": "KEY", "value": "value" }]
+  },
+  {
+    "name": "preserves internal whitespace with trailing newline",
+    "input": "KEY=value value\n",
+    "existingEnv": [],
+    "expected": [{ "key": "KEY", "value": "value value" }]
+  },
+  {
+    "name": "rejects plus signs in key names",
+    "input": "FOO+BAR=baz",
+    "existingEnv": [],
+    "expectedError": "UnexpectedChar"
+  },
+  {
+    "name": "rejects unterminated quoted values",
+    "input": "foo=\"bar",
+    "existingEnv": [],
+    "expectedError": "UnterminatedQuote"
+  },
+  {
+    "name": "parses plain fixture",
+    "fixture": "plain.env",
+    "existingEnv": [],
+    "expected": [
+      { "key": "OPTION_A", "value": "1" },
+      { "key": "OPTION_B", "value": "2" },
+      { "key": "OPTION_C", "value": "3" },
+      { "key": "OPTION_D", "value": "4" },
+      { "key": "OPTION_E", "value": "5" },
+      { "key": "OPTION_F", "value": "" },
+      { "key": "OPTION_G", "value": "" },
+      { "key": "OPTION_H", "value": "1 2" }
+    ]
+  },
+  {
+    "name": "parses exported fixture",
+    "fixture": "exported.env",
+    "existingEnv": [],
+    "expected": [
+      { "key": "OPTION_A", "value": "2" },
+      { "key": "OPTION_B", "value": "\\n" }
+    ]
+  },
+  {
+    "name": "parses equals fixture",
+    "fixture": "equals.env",
+    "existingEnv": [],
+    "expected": [{ "key": "OPTION_A", "value": "postgres://localhost:5432/database?sslmode=disable" }]
+  },
+  {
+    "name": "parses hyphen fixture",
+    "fixture": "hyphen.env",
+    "existingEnv": [],
+    "expected": [
+      { "key": "OPTION_A", "value": "abc" },
+      { "key": "OPTION-B", "value": "def" }
+    ]
+  },
+  {
+    "name": "parses comments fixture",
+    "fixture": "comments.env",
+    "existingEnv": [],
+    "expected": [
+      { "key": "qux", "value": "thud" },
+      { "key": "thud", "value": "fred#qux" },
+      { "key": "fred", "value": "qux#baz" },
+      { "key": "foo", "value": "bar" },
+      { "key": "bar", "value": "foo#baz" },
+      { "key": "baz", "value": "foo" }
+    ]
+  },
+  {
+    "name": "expands substitutions fixture using explicit existing env",
+    "fixture": "substitutions.env",
+    "existingEnv": [{ "key": "GLOBAL_OPTION", "value": "global" }],
+    "expected": [
+      { "key": "OPTION_A", "value": "1" },
+      { "key": "OPTION_B", "value": "1" },
+      { "key": "OPTION_C", "value": "1" },
+      { "key": "OPTION_D", "value": "11" },
+      { "key": "OPTION_E", "value": "" },
+      { "key": "OPTION_F", "value": "global" }
+    ]
+  },
+  {
+    "name": "parses quoted fixture",
+    "fixture": "quoted.env",
+    "existingEnv": [],
+    "expected": [
+      { "key": "OPTION_A", "value": "1" },
+      { "key": "OPTION_B", "value": "2" },
+      { "key": "OPTION_C", "value": "" },
+      { "key": "OPTION_D", "value": "\\n" },
+      { "key": "OPTION_E", "value": "1" },
+      { "key": "OPTION_F", "value": "2" },
+      { "key": "OPTION_G", "value": "" },
+      { "key": "OPTION_H", "value": "\n" },
+      { "key": "OPTION_I", "value": "echo 'asd'" },
+      { "key": "OPTION_J", "value": "line 1\nline 2" },
+      { "key": "OPTION_K", "value": "line one\nthis is \\'quoted\\'\none more line" },
+      { "key": "OPTION_L", "value": "line 1\nline 2" },
+      { "key": "OPTION_M", "value": "line one\nthis is \"quoted\"\none more line" }
+    ]
+  },
+  {
+    "name": "parses multiple assignments from string input",
+    "input": "ONE=1\nTWO='2'\nTHREE = \"3\"",
+    "existingEnv": [],
+    "expected": [
+      { "key": "ONE", "value": "1" },
+      { "key": "TWO", "value": "2" },
+      { "key": "THREE", "value": "3" }
+    ]
+  },
+  {
+    "name": "parses double quoted values",
+    "input": "FOO=\"bar\"",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar" }]
+  },
+  {
+    "name": "parses single quoted values",
+    "input": "FOO='bar'",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar" }]
+  },
+  {
+    "name": "parses single quotes inside double quotes",
+    "input": "FOO=\"'d'\"",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "'d'" }]
+  },
+  {
+    "name": "parses export-looking keys without trimming export",
+    "input": "exportFoo=2",
+    "existingEnv": [],
+    "expected": [{ "key": "exportFoo", "value": "2" }]
+  },
+  {
+    "name": "parses keys prefixed with export without whitespace",
+    "input": "exportFOO=2",
+    "existingEnv": [],
+    "expected": [{ "key": "exportFOO", "value": "2" }]
+  },
+  {
+    "name": "parses underscored export key",
+    "input": "export_FOO =2",
+    "existingEnv": [],
+    "expected": [{ "key": "export_FOO", "value": "2" }]
+  },
+  {
+    "name": "parses dotted export key",
+    "input": "export.FOO= 2",
+    "existingEnv": [],
+    "expected": [{ "key": "export.FOO", "value": "2" }]
+  },
+  {
+    "name": "parses export after leading space",
+    "input": " export OPTION_A=2",
+    "existingEnv": [],
+    "expected": [{ "key": "OPTION_A", "value": "2" }]
+  },
+  {
+    "name": "parses export after leading tab",
+    "input": "\texport OPTION_A=2",
+    "existingEnv": [],
+    "expected": [{ "key": "OPTION_A", "value": "2" }]
+  },
+  {
+    "name": "allows an empty key name",
+    "input": "=\"value\"",
+    "existingEnv": [],
+    "expected": [{ "key": "", "value": "value" }]
+  },
+  {
+    "name": "ignores blank input",
+    "input": "\n",
+    "existingEnv": [],
+    "expected": []
+  },
+  {
+    "name": "ignores windows-style blank input",
+    "input": "\r\n",
+    "existingEnv": [],
+    "expected": []
+  },
+  {
+    "name": "ignores whitespace-only input",
+    "input": "\t\t ",
+    "existingEnv": [],
+    "expected": []
+  },
+  {
+    "name": "ignores full-line comments",
+    "input": "# Comment",
+    "existingEnv": [],
+    "expected": []
+  },
+  {
+    "name": "ignores indented comments",
+    "input": "\t # comment",
+    "existingEnv": [],
+    "expected": []
+  },
+  {
+    "name": "skips multiple consecutive comments before value",
+    "input": "# one\n# two\n# three\nFOO=bar",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar" }]
+  },
+  {
+    "name": "rejects at signs in key names",
+    "input": "FOO@BAR=baz",
+    "existingEnv": [],
+    "expectedError": "UnexpectedChar"
+  },
+  {
+    "name": "rejects slashes in key names",
+    "input": "FOO/BAR=baz",
+    "existingEnv": [],
+    "expectedError": "UnexpectedChar"
+  },
+  {
+    "name": "rejects invalid fixture",
+    "fixture": "invalid1.env",
+    "existingEnv": [],
+    "expectedError": "UnexpectedChar"
+  },
+  {
+    "name": "rejects badly formatted line without separator",
+    "input": "lol$wut",
+    "existingEnv": [],
+    "expectedError": "UnexpectedChar"
+  },
+  {
+    "name": "expands variables found in values",
+    "input": "FOO=test\nBAR=$FOO",
+    "existingEnv": [],
+    "expected": [
+      { "key": "FOO", "value": "test" },
+      { "key": "BAR", "value": "test" }
+    ]
+  },
+  {
+    "name": "expands variables wrapped in braces",
+    "input": "FOO=test\nBAR=${FOO}bar",
+    "existingEnv": [],
+    "expected": [
+      { "key": "FOO", "value": "test" },
+      { "key": "BAR", "value": "testbar" }
+    ]
+  },
+  {
+    "name": "expands undefined variables to empty string",
+    "input": "BAR=$FOO",
+    "existingEnv": [],
+    "expected": [{ "key": "BAR", "value": "" }]
+  },
+  {
+    "name": "expands variables in double quoted strings",
+    "input": "FOO=test\nBAR=\"quote $FOO\"",
+    "existingEnv": [],
+    "expected": [
+      { "key": "FOO", "value": "test" },
+      { "key": "BAR", "value": "quote test" }
+    ]
+  },
+  {
+    "name": "does not expand variables in single quoted strings",
+    "input": "BAR='quote $FOO'",
+    "existingEnv": [],
+    "expected": [{ "key": "BAR", "value": "quote $FOO" }]
+  },
+  {
+    "name": "does not expand escaped dollar variables",
+    "input": "FOO=\"foo\\$BAR\"",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "foo$BAR" }]
+  },
+  {
+    "name": "does not expand escaped braced variables",
+    "input": "FOO=\"foo\\${BAR}\"",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "foo${BAR}" }]
+  },
+  {
+    "name": "expands unescaped braced variables after escaped braced variables",
+    "input": "FOO=test\nBAR=\"foo\\${FOO} ${FOO}\"",
+    "existingEnv": [],
+    "expected": [
+      { "key": "FOO", "value": "test" },
+      { "key": "BAR", "value": "foo${FOO} test" }
+    ]
+  },
+  {
+    "name": "parses multiline quoted values containing separators",
+    "input": "TEST_URLS=\"stratum+tcp://stratum.antpool.com:3333\nstratum+tcp://stratum.antpool.com:443\"",
+    "existingEnv": [],
+    "expected": [
+      {
+        "key": "TEST_URLS",
+        "value": "stratum+tcp://stratum.antpool.com:3333\nstratum+tcp://stratum.antpool.com:443"
+      }
+    ]
+  },
+  {
+    "name": "parses simple value without trailing newline",
+    "input": "KEY=value",
+    "existingEnv": [],
+    "expected": [{ "key": "KEY", "value": "value" }]
+  },
+  {
+    "name": "parses yaml-style value with internal whitespace without trailing newline",
+    "input": "KEY: value value",
+    "existingEnv": [],
+    "expected": [{ "key": "KEY", "value": "value value" }]
+  },
+  {
+    "name": "parses yaml-style value with internal whitespace with trailing newline",
+    "input": "KEY: value value\n",
+    "existingEnv": [],
+    "expected": [{ "key": "KEY", "value": "value value" }]
+  },
+  {
+    "name": "trims leading mixed whitespace before assignment",
+    "input": " \t \t\n\t \t A=a\n",
+    "existingEnv": [],
+    "expected": [{ "key": "A", "value": "a" }]
+  },
+  {
+    "name": "trims leading whitespace before export",
+    "input": " \t\t export A=a\n",
+    "existingEnv": [],
+    "expected": [{ "key": "A", "value": "a" }]
+  },
+  {
+    "name": "trims trailing whitespace",
+    "input": "A=a \t \t\n",
+    "existingEnv": [],
+    "expected": [{ "key": "A", "value": "a" }]
+  },
+  {
+    "name": "trims trailing whitespace with export",
+    "input": "export A=a\t \t \n",
+    "existingEnv": [],
+    "expected": [{ "key": "A", "value": "a" }]
+  },
+  {
+    "name": "trims trailing whitespace with no newline",
+    "input": "A=a ",
+    "existingEnv": [],
+    "expected": [{ "key": "A", "value": "a" }]
+  }
+]

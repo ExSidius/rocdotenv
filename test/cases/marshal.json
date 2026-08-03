@@ -1,0 +1,90 @@
+[
+  {
+    "name": "quotes string values",
+    "env": [{ "key": "key", "value": "value" }],
+    "expected": "key=\"value\""
+  },
+  {
+    "name": "escapes double quotes",
+    "env": [{ "key": "key", "value": "va\"lu\"e" }],
+    "expected": "key=\"va\\\"lu\\\"e\""
+  },
+  {
+    "name": "leaves single quotes alone",
+    "env": [{ "key": "key", "value": "va'lu'e" }],
+    "expected": "key=\"va'lu'e\""
+  },
+  {
+    "name": "escapes newlines carriage returns backslashes and bang",
+    "env": [{ "key": "foo", "value": "\n\r\\r!" }],
+    "expected": "foo=\"\\n\\r\\\\r\\!\""
+  },
+  {
+    "name": "sorts output lines by key",
+    "env": [
+      { "key": "foo", "value": "bar" },
+      { "key": "baz", "value": "buzz" }
+    ],
+    "expected": "baz=\"buzz\"\nfoo=\"bar\""
+  },
+  {
+    "name": "does not quote integers",
+    "env": [{ "key": "key", "value": "10" }],
+    "expected": "key=10"
+  },
+  {
+    "name": "quotes leading plus values",
+    "env": [{ "key": "key", "value": "+123" }],
+    "expected": "key=\"+123\""
+  },
+  {
+    "name": "preserves leading zero integers",
+    "env": [{ "key": "key", "value": "007" }],
+    "expected": "key=007"
+  },
+  {
+    "name": "quotes empty values",
+    "env": [{ "key": "key", "value": "" }],
+    "expected": "key=\"\""
+  },
+  {
+    "name": "quotes alphanumeric values",
+    "env": [{ "key": "key", "value": "12a3" }],
+    "expected": "key=\"12a3\""
+  },
+  {
+    "name": "quotes alphabetic values",
+    "env": [{ "key": "key", "value": "abc" }],
+    "expected": "key=\"abc\""
+  },
+  {
+    "name": "quotes values with internal spaces",
+    "env": [{ "key": "key", "value": "12 3" }],
+    "expected": "key=\"12 3\""
+  },
+  {
+    "name": "quotes lone minus values",
+    "env": [{ "key": "key", "value": "-" }],
+    "expected": "key=\"-\""
+  },
+  {
+    "name": "quotes whitespace-only values",
+    "env": [{ "key": "key", "value": " " }],
+    "expected": "key=\" \""
+  },
+  {
+    "name": "does not quote negative integers",
+    "env": [{ "key": "key", "value": "-123" }],
+    "expected": "key=-123"
+  },
+  {
+    "name": "does not quote large negative integers",
+    "env": [{ "key": "key", "value": "-922337203685477580868712" }],
+    "expected": "key=-922337203685477580868712"
+  },
+  {
+    "name": "does not quote large positive integers",
+    "env": [{ "key": "key", "value": "922337203685477580837281" }],
+    "expected": "key=922337203685477580837281"
+  }
+]
