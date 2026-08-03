@@ -14,3 +14,13 @@ of the Roc implementation.
 The JSON contract cases in `test/cases/` are executable examples of these
 semantics. `DESIGN.md` explains the implementation approach that currently
 satisfies them.
+
+Current Roc implementation mapping:
+
+- `model.allium` -> `Types.roc`
+- `functions.allium` -> `Dotenv.roc` facade plus the focused modules below
+- `parsing.allium` -> `Parser.roc`
+- `expansion.allium` -> `Expansion.roc`
+- `marshal.allium` -> `Marshaller.roc`
+- `load.allium` -> `PureFileLoading.roc`
+- environment operations in `functions.allium` -> `EnvOps.roc`

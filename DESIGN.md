@@ -83,6 +83,18 @@ overloadEnv : List Str, List FakeFile, Env -> Result Env ReadErr
 The named aliases keep the API explicit in generated docs while preserving the
 plain record/list representation that makes tests and interop straightforward.
 
+## Implementation Layout
+
+`Dotenv.roc` is the public facade. The implementation is split to match the
+semantic model:
+
+- `Types.roc`: shared aliases for entries, environments, fake files, and errors.
+- `EnvOps.roc`: lookup, replace-by-key insertion, merging, and load policy application.
+- `Expansion.roc`: variable expansion and expansion-name lookup.
+- `Parser.roc`: statement scanning and source parsing.
+- `Marshaller.roc`: deterministic dotenv serialization.
+- `PureFileLoading.roc`: pure fake file-system read/load/overload behavior.
+
 ## Data Model
 
 Use a deterministic environment representation:

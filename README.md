@@ -54,6 +54,17 @@ roc test ContractTest.roc
 current `Dotenv` module shape. The generated suite currently has 100
 expectations.
 
+## Implementation Layout
+
+`Dotenv.roc` is the public facade. The focused modules are:
+
+- `Types.roc`
+- `EnvOps.roc`
+- `Expansion.roc`
+- `Parser.roc`
+- `Marshaller.roc`
+- `PureFileLoading.roc`
+
 ## Package Checks
 
 `main.roc` is the package entry point and currently exposes the `Dotenv` module.
