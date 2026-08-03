@@ -33,6 +33,7 @@ tracked in `test/cases/deferred-io.md`.
 The semantics are split by behavior area:
 
 - `semantics/model.allium`: domain values, entities, variants, and errors.
+- `semantics/functions.allium`: semantic operations and typed contracts.
 - `semantics/parsing.allium`: source parsing into deterministic entries.
 - `semantics/expansion.allium`: variable expansion and lookup order.
 - `semantics/marshal.allium`: deterministic serialization.
