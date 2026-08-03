@@ -5,8 +5,9 @@
 `rocdotenv` should be a Roc package that matches the core behavior of
 `joho/godotenv` while presenting an idiomatic, pure Roc API.
 
-The first implementation target is the generated contract suite in
-`ContractTest.roc`, which is generated from JSON cases in `test/cases/`.
+The typed semantic model lives in `semantics/`. The first implementation target
+is the generated contract suite in `ContractTest.roc`, which is generated from
+JSON cases in `test/cases/`.
 
 ## Compatibility Target
 
@@ -26,6 +27,20 @@ The package should match `godotenv` for:
 File-system and process-environment behavior is modeled with explicit fake
 inputs in `test/cases/io.json`. Real side-effect adapters are deferred and
 tracked in `test/cases/deferred-io.md`.
+
+## Semantic Model
+
+The semantics are split by behavior area:
+
+- `semantics/model.allium`: domain values, entities, variants, and errors.
+- `semantics/parsing.allium`: source parsing into deterministic entries.
+- `semantics/expansion.allium`: variable expansion and lookup order.
+- `semantics/marshal.allium`: deterministic serialization.
+- `semantics/load.allium`: pure fake file-system and environment application.
+
+The JSON files under `test/cases/` are executable examples of these semantics.
+The Roc implementation should remain a replaceable realization of the semantic
+model rather than the source of truth for the model.
 
 ## Public Package Shape
 

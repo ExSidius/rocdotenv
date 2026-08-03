@@ -1,0 +1,65 @@
+-- Variable expansion semantics.
+
+given {
+    value: RawValue
+    env: Env
+}
+
+value ExpansionReference {
+    spelling: braced | unbraced
+    name: ExpansionName
+    escaped: Boolean
+}
+
+rule RecognizeBracedExpansion {
+    when: ExpandValue(value, env)
+    requires: value.text contains "${" followed_by name: ExpansionName followed_by "}"
+    ensures: ExpansionReference.created(
+        spelling: braced,
+        name: name,
+        escaped: false
+    )
+}
+
+rule RecognizeUnbracedExpansion {
+    when: ExpandValue(value, env)
+    requires: value.text contains "$" followed_by name: ExpansionName
+    ensures: ExpansionReference.created(
+        spelling: unbraced,
+        name: name,
+        escaped: false
+    )
+}
+
+rule PreserveEscapedDollar {
+    when: ExpandValue(value, env)
+    requires: value.text contains "\\$"
+    ensures: escaped_dollar contributes_literal "$"
+    ensures: no ExpansionReference.created from escaped_dollar
+}
+
+rule ExpansionLookupOrder {
+    when: reference: ExpansionReference.created
+    requires: reference.escaped = false
+    ensures:
+        reference replacement is first entry.value in env.entries where entry.key.text = reference.name.text
+    ensures:
+        reference replacement is "" if no matching entry exists
+}
+
+rule ExpansionNamesAreNarrowerThanKeys {
+    when: reference: ExpansionReference.created
+    ensures: reference.name.allowed_characters = "A-Z 0-9 _"
+}
+
+rule SingleQuotedValuesDoNotExpand {
+    when: statement: Assignment
+    requires: statement.raw_value starts_with "'"
+    ensures: no ExpansionReference.created from statement.raw_value
+}
+
+rule ExpansionIsSequentialWithinSource {
+    when: ParseSource(source, existing_env)
+    ensures:
+        each assignment expands against parsed_entries_before_assignment plus existing_env
+}

@@ -2,8 +2,8 @@
 
 An early Roc port of `godotenv`.
 
-See `DESIGN.md` for the compatibility target, parser architecture, and package
-design notes.
+See `semantics/` for the typed behavioral model and `DESIGN.md` for the
+compatibility target, parser architecture, and package design notes.
 
 ## Local Roc Environment
 
@@ -31,8 +31,11 @@ ROC_VERSION=alpha4-rolling ./scripts/install-roc.sh
 
 ## Test Harness
 
-The compatibility test corpus lives in JSON under `test/cases/`. These files are
-the source of truth and are intentionally independent of the current Roc API.
+The semantic model lives in `semantics/`. The compatibility test corpus lives in
+JSON under `test/cases/`.
+
+The JSON files are executable examples of the semantics and are intentionally
+independent of the current Roc API.
 The corpus currently covers parser, marshal, pure load/apply, and roundtrip
 cases translated from upstream `godotenv`.
 Fake file-system and process-environment behavior is covered by

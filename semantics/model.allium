@@ -1,0 +1,98 @@
+-- Core semantic model for rocdotenv.
+-- These types describe observable dotenv data, not Roc implementation details.
+
+value Key {
+    text: String
+    allowed_characters: "A-Z a-z 0-9 _ . -"
+}
+
+value ExpansionName {
+    text: String
+    allowed_characters: "A-Z 0-9 _"
+}
+
+value RawValue {
+    text: String
+}
+
+value ParsedValue {
+    text: String
+}
+
+value SourceText {
+    text: String
+}
+
+value Entry {
+    key: Key
+    value: ParsedValue
+}
+
+value Env {
+    entries: List<Entry>
+    lookup_order: first_match
+    duplicate_key_policy: later_entries_replace_earlier_entries
+}
+
+entity Statement {
+    source: SourceText
+    kind: Assignment | Comment | Blank | Invalid
+}
+
+variant Assignment : Statement {
+    key: Key
+    raw_value: RawValue
+    separator: equals | colon
+    export_prefix: Boolean
+}
+
+variant Comment : Statement {
+    text: String
+}
+
+variant Blank : Statement {}
+
+variant Invalid : Statement {
+    reason: ParseError
+}
+
+value FakePath {
+    text: String
+}
+
+entity FakeFileSource {
+    kind: File | Directory
+}
+
+variant File : FakeFileSource {
+    content: SourceText
+}
+
+variant Directory : FakeFileSource {}
+
+value FakeFile {
+    path: FakePath
+    source: FakeFileSource
+}
+
+value FakeFileSystem {
+    files: List<FakeFile>
+}
+
+value LoadPolicy {
+    mode: preserve_existing | override_existing
+}
+
+value ParseError {
+    kind: unexpected_char | unterminated_quote
+}
+
+value ReadError {
+    kind: file_not_found | is_directory | parse_error
+    path: FakePath?
+    parse_error: ParseError?
+}
+
+value MarshalError {
+    kind: marshal_failed
+}

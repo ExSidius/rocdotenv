@@ -1,0 +1,66 @@
+-- Marshal semantics for Env -> SourceText.
+
+given {
+    env: Env
+}
+
+value MarshalledLine {
+    key: Key
+    encoded_value: String
+}
+
+rule MarshalSortsByKey {
+    when: MarshalEnv(env)
+    ensures:
+        output.lines ordered_by line.key.text ascending_byte_order
+}
+
+rule MarshalIntegerValuesWithoutQuotes {
+    when: entry: Entry in env.entries
+    requires: entry.value.text is_integer_string
+    ensures: MarshalledLine.created(
+        key: entry.key,
+        encoded_value: entry.value.text
+    )
+}
+
+rule MarshalNonIntegerValuesWithDoubleQuotes {
+    when: entry: Entry in env.entries
+    requires: entry.value.text is_not_integer_string
+    ensures: MarshalledLine.created(
+        key: entry.key,
+        encoded_value: "\"" plus escaped(entry.value.text) plus "\""
+    )
+}
+
+rule IntegerStringDefinition {
+    when: MarshalEnv(env)
+    ensures:
+        integer_string is one_or_more_digits
+            or "-" followed_by one_or_more_digits
+}
+
+rule LeadingZeroIntegersStayUnquoted {
+    when: entry: Entry in env.entries
+    requires: entry.value.text is_integer_string
+    requires: entry.value.text starts_with "0"
+    ensures: entry.value.text is emitted_without_quotes
+}
+
+rule LeadingPlusValuesAreNotIntegers {
+    when: entry: Entry in env.entries
+    requires: entry.value.text starts_with "+"
+    ensures: entry.value.text is emitted_with_double_quotes
+}
+
+rule EscapeMarshalSpecialCharacters {
+    when: entry: Entry in env.entries
+    requires: entry.value.text is_not_integer_string
+    ensures: escaped(entry.value.text) replaces "\\" with "\\\\"
+    ensures: escaped(entry.value.text) replaces "\n" with "\\n"
+    ensures: escaped(entry.value.text) replaces "\r" with "\\r"
+    ensures: escaped(entry.value.text) replaces "\"" with "\\\""
+    ensures: escaped(entry.value.text) replaces "!" with "\\!"
+    ensures: escaped(entry.value.text) replaces "$" with "\\$"
+    ensures: escaped(entry.value.text) replaces "`" with "\\`"
+}

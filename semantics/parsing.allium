@@ -1,0 +1,85 @@
+-- Parsing semantics for SourceText -> Env.
+
+given {
+    source: SourceText
+    existing_env: Env
+}
+
+rule NormalizeLineEndings {
+    when: ParseSource(source, existing_env)
+    ensures: NormalizedSource.created(
+        text: source.text
+            replace "\r\n" with "\n"
+            replace "\r" with "\n"
+    )
+}
+
+rule StatementBoundariesRespectQuotes {
+    when: normalized: NormalizedSource.created
+    ensures:
+        for statement in normalized.statements:
+            statement.source.text may_contain "\n" only_if statement is Assignment and statement.raw_value is quoted
+}
+
+rule IgnoreBlankAndCommentStatements {
+    when: statement: Statement.kind in Blank | Comment
+    ensures: statement contributes_no_entry_to Env
+}
+
+rule ParseAssignmentSeparator {
+    when: statement: Assignment
+    ensures:
+        statement.separator is equals if statement.source.text contains "=" before ":"
+    ensures:
+        statement.separator is colon if statement.source.text contains ":" before "="
+}
+
+rule StripExportPrefix {
+    when: statement: Assignment.export_prefix = true
+    ensures: statement.key.text excludes_leading "export "
+    ensures: statement.key.text excludes_leading "export\t"
+}
+
+rule ValidateKeyCharacters {
+    when: statement: Assignment
+    requires: statement.key.text contains character outside Key.allowed_characters
+    ensures: statement.kind = Invalid
+    ensures: statement.reason.kind = unexpected_char
+}
+
+rule ParseUnquotedValue {
+    when: statement: Assignment
+    requires: statement.raw_value is unquoted
+    ensures: statement.raw_value.text trims_surrounding_whitespace
+    ensures: statement.raw_value.text excludes_inline_comment_starting_with " #"
+    ensures: ExpandValue(statement.raw_value, parsed_so_far plus existing_env)
+}
+
+rule ParseSingleQuotedValue {
+    when: statement: Assignment
+    requires: statement.raw_value starts_with "'"
+    ensures: statement.value.text preserves_literal_content_until_matching_quote
+    ensures: statement.value.text is_not_variable_expanded
+}
+
+rule ParseDoubleQuotedValue {
+    when: statement: Assignment
+    requires: statement.raw_value starts_with "\""
+    ensures: statement.value.text decodes_double_quote_escapes
+    ensures: ExpandValue(statement.value, parsed_so_far plus existing_env)
+}
+
+rule RejectUnterminatedQuotedValue {
+    when: statement: Assignment
+    requires: statement.raw_value starts_with "'" or statement.raw_value starts_with "\""
+    requires: statement.raw_value has_no_matching_closing_quote
+    ensures: statement.kind = Invalid
+    ensures: statement.reason.kind = unterminated_quote
+}
+
+rule ParsedEntriesReplaceEarlierEntries {
+    when: entry: Entry.created
+    requires: parsed_so_far.entries contains prior where prior.key = entry.key
+    ensures: parsed_so_far.entries excludes prior
+    ensures: parsed_so_far.entries includes entry
+}

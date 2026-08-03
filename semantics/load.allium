@@ -1,0 +1,88 @@
+-- Pure file-reading and environment-application semantics.
+
+given {
+    paths: List<FakePath>
+    file_system: FakeFileSystem
+    existing_env: Env
+}
+
+value ReadRequest {
+    paths: List<FakePath>
+    file_system: FakeFileSystem
+    existing_env: Env
+}
+
+value LoadRequest {
+    paths: List<FakePath>
+    file_system: FakeFileSystem
+    existing_env: Env
+    policy: LoadPolicy
+}
+
+rule EmptyPathListDefaultsToDotEnv {
+    when: request: ReadRequest or LoadRequest
+    requires: request.paths is_empty
+    ensures: effective_paths = [FakePath(text: ".env")]
+}
+
+rule ExplicitPathListIsPreserved {
+    when: request: ReadRequest or LoadRequest
+    requires: request.paths is_not_empty
+    ensures: effective_paths = request.paths
+}
+
+rule MissingFileReturnsReadError {
+    when: path: FakePath in effective_paths
+    requires: file_system.files has_no file where file.path = path
+    ensures: ReadError.created(kind: file_not_found, path: path)
+}
+
+rule DirectoryReturnsReadError {
+    when: path: FakePath in effective_paths
+    requires: file_system.files contains file where file.path = path and file.source is Directory
+    ensures: ReadError.created(kind: is_directory, path: path)
+}
+
+rule ReadFilesParsesInPathOrder {
+    when: ReadFiles(paths, file_system, existing_env)
+    ensures:
+        each file is parsed in effective_paths order
+    ensures:
+        each file expands against read_entries_before_file plus existing_env
+}
+
+rule ReadFilesMergesWithLaterFilesWinning {
+    when: ReadFiles(paths, file_system, existing_env)
+    requires: later_file entry has same key as earlier_file entry
+    ensures: output_env contains later_file entry
+    ensures: output_env excludes earlier_file entry
+}
+
+rule LoadPreservesExistingValues {
+    when: LoadEnv(paths, file_system, existing_env)
+    requires: parsed entry has same key as existing entry
+    ensures: output_env contains existing entry
+    ensures: output_env excludes parsed entry for same key
+}
+
+rule OverloadOverridesExistingValues {
+    when: OverloadEnv(paths, file_system, existing_env)
+    requires: parsed entry has same key as existing entry
+    ensures: output_env contains parsed entry
+    ensures: output_env excludes existing entry for same key
+}
+
+rule LoadAndOverloadThreadEnvironmentAcrossFiles {
+    when: LoadEnv(paths, file_system, existing_env) or OverloadEnv(paths, file_system, existing_env)
+    ensures:
+        each file expands against current output_env before applying that file
+}
+
+rule PureCoreHasNoSideEffects {
+    when: ReadFiles(paths, file_system, existing_env)
+        or LoadEnv(paths, file_system, existing_env)
+        or OverloadEnv(paths, file_system, existing_env)
+    ensures: process_environment is_not_read
+    ensures: process_environment is_not_mutated
+    ensures: real_file_system is_not_read
+}
