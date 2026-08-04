@@ -1,9 +1,52 @@
 # rocdotenv
 
-An early Roc port of `godotenv`.
+A pure Roc port of `joho/godotenv`.
+
+The package exposes deterministic parse, marshal, merge, and load semantics with
+explicit inputs. It does not read files, read the process environment, or mutate
+host state.
 
 See `semantics/` for the typed behavioral model and `DESIGN.md` for the
 compatibility target, parser architecture, and package design notes.
+
+## Using the Package
+
+`main.roc` is the package entry point and exposes the `Dotenv` module:
+
+```roc
+package [Dotenv] {}
+```
+
+Import it from an app or another package and pass explicit data:
+
+```roc
+import Dotenv
+
+# Parse dotenv source text with an explicit expansion environment.
+when Dotenv.parseString("FOO=bar", []) is
+    Ok(env) -> ...
+    Err(_) -> ...
+
+# Model files with FakeFile values instead of reading the real file system.
+fakeFiles = [
+    { path: ".env", source: File("FOO=bar") },
+]
+
+when Dotenv.loadEnv([".env"], fakeFiles, existingEnv) is
+    Ok(env) -> ...
+    Err(_) -> ...
+```
+
+Public API:
+
+- `parseString` — parse source text into key/value entries
+- `marshalEnv` — serialize entries back to dotenv source text
+- `mergeParsedFiles` — combine parsed files in load order
+- `applyParsedEnv` — apply parsed values with preserve or override policy
+- `readFiles`, `loadEnv`, `overloadEnv` — fake file-system load semantics
+
+Host I/O belongs in the consuming app. Read files, build `List Dotenv.FakeFile`,
+read or construct `Dotenv.Env`, then call the pure functions above.
 
 ## Local Roc Environment
 
@@ -38,17 +81,15 @@ The JSON files are executable examples of the semantics and are intentionally
 independent of the current Roc API.
 The corpus currently covers parser, marshal, pure load/apply, and roundtrip
 cases translated from upstream `godotenv`.
-Fake file-system and process-environment behavior is covered by
-`test/cases/io.json`; the CLI adapter is tracked alongside remaining deferred
-I/O work in `test/cases/deferred-io.md`.
+Fake file-system and environment behavior is covered by `test/cases/io.json`.
+Out-of-scope host behaviors are listed in `test/cases/deferred-io.md`.
 
-Generate the Roc adapter tests with:
+Generate the Roc contract tests with:
 
 ```sh
 uv run python scripts/generate_roc_tests.py
-roc format main.roc Dotenv.roc Types.roc EnvOps.roc Expansion.roc Parser.roc Marshaller.roc PureFileLoading.roc CliAdapter.roc cli.roc ContractTest.roc CliAdapterTest.roc
+roc format main.roc Dotenv.roc Types.roc EnvOps.roc Expansion.roc Parser.roc Marshaller.roc PureFileLoading.roc ContractTest.roc
 roc test ContractTest.roc
-roc test CliAdapterTest.roc
 ```
 
 `ContractTest.roc` is generated from the JSON cases and adapts them to the
@@ -59,7 +100,6 @@ expectations.
 
 `Dotenv.roc` is the public facade. The focused modules are:
 
-- `CliAdapter.roc`
 - `Types.roc`
 - `EnvOps.roc`
 - `Expansion.roc`
@@ -67,45 +107,12 @@ expectations.
 - `Marshaller.roc`
 - `PureFileLoading.roc`
 
-`cli.roc` is a runnable app that performs real CLI/file/environment effects at
-the edge and delegates dotenv behavior to the pure modules.
-
-## CLI
-
-Run the side-effecting CLI adapter with:
-
-```sh
-roc cli.roc -- [--overload] [file ...]
-```
-
-Examples:
-
-```sh
-roc cli.roc -- .env .env.local
-roc cli.roc -- --overload .env
-roc cli.roc -- --help
-```
-
-The CLI reads real dotenv files, reads the current process environment for
-expansion and load/overload behavior, and prints the resulting deterministic
-dotenv content to stdout.
-
-A standalone CLI process cannot mutate its parent shell environment. It can only
-read its own environment and print or pass along derived values.
-
 ## Package Checks
-
-`main.roc` is the package entry point and currently exposes the `Dotenv` module.
 
 ```sh
 roc check main.roc
-roc check cli.roc
 roc docs main.roc
 ```
-
-The public module is implemented against the pure contract suite. File-system
-and process-environment behavior is modeled with explicit fake inputs; `cli.roc`
-is the first real side-effecting adapter.
 
 ## License
 

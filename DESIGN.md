@@ -25,8 +25,8 @@ The package should match `godotenv` for:
 - Roundtrip behavior over upstream fixtures.
 
 File-system and process-environment behavior is modeled with explicit fake
-inputs in `test/cases/io.json`. `cli.roc` is the first real side-effecting
-adapter, and remaining gaps are tracked in `test/cases/deferred-io.md`.
+inputs in `test/cases/io.json`. Out-of-scope host behaviors are tracked in
+`test/cases/deferred-io.md`.
 
 ## Semantic Model
 
@@ -51,9 +51,9 @@ model rather than the source of truth for the model.
 package [Dotenv] {}
 ```
 
-The reusable core should stay pure. File loading, process environment reads,
-stdout/stderr writes, subprocess execution, and any environment mutation should
-live in adapters or apps.
+The reusable core stays pure. File loading, process environment reads,
+stdout/stderr writes, subprocess execution, and any environment mutation belong
+in consuming apps, not in this package.
 
 Current public surface:
 
@@ -90,15 +90,11 @@ plain record/list representation that makes tests and interop straightforward.
 semantic model:
 
 - `Types.roc`: shared aliases for entries, environments, fake files, and errors.
-- `CliAdapter.roc`: pure CLI argument/config handling and conversion into the
-  existing fake-file/environment model.
 - `EnvOps.roc`: lookup, replace-by-key insertion, merging, and load policy application.
 - `Expansion.roc`: variable expansion and expansion-name lookup.
 - `Parser.roc`: statement scanning and source parsing.
 - `Marshaller.roc`: deterministic dotenv serialization.
 - `PureFileLoading.roc`: pure fake file-system read/load/overload behavior.
-- `cli.roc`: effectful CLI app that reads args, files, and process env, then
-  delegates behavior to the pure modules.
 
 ## Data Model
 
@@ -244,17 +240,11 @@ Purely modeled behaviors:
 - Process env preserve/override.
 - Process env fallback during variable expansion.
 
-Adapter path:
+Consumer path:
 
 1. Keep fake file-system and fake-env JSON cases as the contract.
-2. Keep platform and CLI adapters thin wrappers over the pure package functions.
-3. Add host-specific behavior only at the app/platform edge.
-
-`cli.roc` is the first side-effecting adapter. It uses the selected CLI platform
-to read command-line arguments, read files, read the current process
-environment, and write stdout/stderr. It cannot mutate the parent shell
-environment; no standalone child process can. Future command-exec behavior could
-apply dotenv values to a subprocess environment instead.
+2. Let consuming apps read real files and process environments at the edge.
+3. Convert host data into `FakeFile` and `Env` values before calling `Dotenv`.
 
 ## Test Strategy
 
@@ -289,4 +279,4 @@ Ongoing implementation workflow:
 
 - Make one parser or marshaller slice green at a time.
 - Regenerate tests when JSON cases change.
-- Keep platform and CLI adapter work separate from the pure package contract.
+- Keep host I/O outside the pure package contract.

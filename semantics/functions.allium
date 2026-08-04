@@ -95,18 +95,3 @@ contract PureFileLoading {
         -- Files are processed in effective path order, and later files can
         -- expand against values read from earlier files.
 }
-
-contract CliAdapter {
-    parse_args: (args: List<String>) -> Result<ParsedArgs, CliError>
-    read_real_files: (paths: List<FakePath>) -> Result<List<FakeFile>, ReadError>
-    read_process_env: () -> Env
-    render_env: (env: Env) -> Result<SourceText, MarshalError>
-
-    @invariant SideEffectsAtEdge
-        -- The CLI adapter is the only current layer that reads real files,
-        -- reads the process environment, or writes stdout/stderr.
-
-    @invariant ParentEnvironmentCannotBeMutated
-        -- A standalone CLI process cannot mutate the parent shell environment.
-        -- It can print derived values or pass them to a subprocess.
-}
