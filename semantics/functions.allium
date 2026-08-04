@@ -1,0 +1,97 @@
+-- Function contracts for the rocdotenv semantic model.
+-- These contracts name the operations that an implementation must provide.
+
+contract Parser {
+    parse_string: (source: SourceText, existing_env: Env) -> Result<Env, ParseError>
+
+    split_statements: (source: SourceText) -> List<Statement>
+    parse_statement: (statement: Statement, expansion_env: Env) -> Result<Entry?, ParseError>
+    parse_raw_value: (raw_value: RawValue, expansion_env: Env) -> Result<ParsedValue, ParseError>
+
+    @invariant PureParser
+        -- Parser functions do not read files, read the process environment,
+        -- mutate the process environment, or observe time.
+
+    @invariant SequentialExpansion
+        -- Each assignment expands against entries parsed before it plus the
+        -- explicit existing_env supplied to parse_string.
+}
+
+contract Expander {
+    expand_value: (value: RawValue, env: Env) -> ParsedValue
+    collect_expansion_name: (source: SourceText) -> ExpansionName
+    lookup_expansion: (name: ExpansionName, env: Env) -> ParsedValue
+
+    @invariant MissingExpansionIsEmpty
+        -- lookup_expansion returns an empty ParsedValue when env has no key
+        -- matching the expansion name.
+
+    @invariant EscapedDollarIsLiteral
+        -- A dollar sign preceded by a backslash contributes a literal dollar
+        -- and does not start an expansion reference.
+}
+
+contract Marshaller {
+    marshal_env: (env: Env) -> Result<SourceText, MarshalError>
+    marshal_entry: (entry: Entry) -> MarshalledLine
+    escape_marshal_value: (value: ParsedValue) -> String
+    is_integer_string: (value: ParsedValue) -> Boolean
+
+    @invariant DeterministicOutput
+        -- marshal_env emits entries sorted by key byte order.
+
+    @invariant IntegerQuoting
+        -- Integer strings are emitted unquoted; non-integer strings are emitted
+        -- double-quoted with the configured special-character escapes.
+}
+
+contract EnvOps {
+    lookup_env: (env: Env, key: Key) -> ParsedValue
+    has_key: (env: Env, key: Key) -> Boolean
+    put_env: (env: Env, entry: Entry) -> Env
+    merge_parsed_files: (files: List<Env>) -> Env
+    apply_parsed_env: (parsed_env: Env, existing_env: Env, policy: LoadPolicy) -> Env
+
+    @invariant PutReplacesByKey
+        -- put_env removes any existing entry with the same key before appending
+        -- the new entry.
+
+    @invariant PreserveExistingPolicy
+        -- apply_parsed_env with preserve_existing keeps existing entries when
+        -- parsed_env contains the same key.
+
+    @invariant OverrideExistingPolicy
+        -- apply_parsed_env with override_existing replaces existing entries
+        -- when parsed_env contains the same key.
+}
+
+contract PureFileLoading {
+    read_files: (
+        paths: List<FakePath>,
+        file_system: FakeFileSystem,
+        existing_env: Env,
+    ) -> Result<Env, ReadError>
+
+    load_env: (
+        paths: List<FakePath>,
+        file_system: FakeFileSystem,
+        existing_env: Env,
+    ) -> Result<Env, ReadError>
+
+    overload_env: (
+        paths: List<FakePath>,
+        file_system: FakeFileSystem,
+        existing_env: Env,
+    ) -> Result<Env, ReadError>
+
+    @invariant DefaultPath
+        -- Empty paths are interpreted as a single ".env" path.
+
+    @invariant FakeInputsOnly
+        -- These functions only inspect the provided FakeFileSystem and Env.
+        -- They do not read the real file system or process environment.
+
+    @invariant PathOrder
+        -- Files are processed in effective path order, and later files can
+        -- expand against values read from earlier files.
+}

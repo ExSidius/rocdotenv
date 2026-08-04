@@ -1,0 +1,147 @@
+[
+  {
+    "name": "readFiles defaults to .env",
+    "operation": "readFiles",
+    "paths": [],
+    "files": [
+      { "path": ".env", "type": "file", "fixture": "plain.env" }
+    ],
+    "existingEnv": [],
+    "expected": [
+      { "key": "OPTION_A", "value": "1" },
+      { "key": "OPTION_B", "value": "2" },
+      { "key": "OPTION_C", "value": "3" },
+      { "key": "OPTION_D", "value": "4" },
+      { "key": "OPTION_E", "value": "5" },
+      { "key": "OPTION_F", "value": "" },
+      { "key": "OPTION_G", "value": "" },
+      { "key": "OPTION_H", "value": "1 2" }
+    ]
+  },
+  {
+    "name": "readFiles returns missing file error",
+    "operation": "readFiles",
+    "paths": ["missing.env"],
+    "files": [],
+    "existingEnv": [],
+    "expectedError": { "tag": "FileNotFound", "path": "missing.env" }
+  },
+  {
+    "name": "readFiles returns directory error",
+    "operation": "readFiles",
+    "paths": ["fixtures/"],
+    "files": [
+      { "path": "fixtures/", "type": "directory" }
+    ],
+    "existingEnv": [],
+    "expectedError": { "tag": "IsDirectory", "path": "fixtures/" }
+  },
+  {
+    "name": "readFiles merges multiple files with later values winning",
+    "operation": "readFiles",
+    "paths": ["plain.env", "exported.env"],
+    "files": [
+      { "path": "plain.env", "type": "file", "fixture": "plain.env" },
+      { "path": "exported.env", "type": "file", "fixture": "exported.env" }
+    ],
+    "existingEnv": [],
+    "expected": [
+      { "key": "OPTION_C", "value": "3" },
+      { "key": "OPTION_D", "value": "4" },
+      { "key": "OPTION_E", "value": "5" },
+      { "key": "OPTION_F", "value": "" },
+      { "key": "OPTION_G", "value": "" },
+      { "key": "OPTION_H", "value": "1 2" },
+      { "key": "OPTION_A", "value": "2" },
+      { "key": "OPTION_B", "value": "\\n" }
+    ]
+  },
+  {
+    "name": "readFiles uses explicit existing env for expansion fallback",
+    "operation": "readFiles",
+    "paths": ["substitutions.env"],
+    "files": [
+      { "path": "substitutions.env", "type": "file", "fixture": "substitutions.env" }
+    ],
+    "existingEnv": [{ "key": "GLOBAL_OPTION", "value": "global" }],
+    "expected": [
+      { "key": "OPTION_A", "value": "1" },
+      { "key": "OPTION_B", "value": "1" },
+      { "key": "OPTION_C", "value": "1" },
+      { "key": "OPTION_D", "value": "11" },
+      { "key": "OPTION_E", "value": "" },
+      { "key": "OPTION_F", "value": "global" }
+    ]
+  },
+  {
+    "name": "loadEnv preserves existing values",
+    "operation": "loadEnv",
+    "paths": ["plain.env"],
+    "files": [
+      { "path": "plain.env", "type": "file", "fixture": "plain.env" }
+    ],
+    "existingEnv": [
+      { "key": "OPTION_A", "value": "do_not_override" },
+      { "key": "OPTION_B", "value": "" }
+    ],
+    "expected": [
+      { "key": "OPTION_A", "value": "do_not_override" },
+      { "key": "OPTION_B", "value": "" },
+      { "key": "OPTION_C", "value": "3" },
+      { "key": "OPTION_D", "value": "4" },
+      { "key": "OPTION_E", "value": "5" },
+      { "key": "OPTION_F", "value": "" },
+      { "key": "OPTION_G", "value": "" },
+      { "key": "OPTION_H", "value": "1 2" }
+    ]
+  },
+  {
+    "name": "overloadEnv overrides existing values",
+    "operation": "overloadEnv",
+    "paths": ["plain.env"],
+    "files": [
+      { "path": "plain.env", "type": "file", "fixture": "plain.env" }
+    ],
+    "existingEnv": [
+      { "key": "OPTION_A", "value": "do_not_override" }
+    ],
+    "expected": [
+      { "key": "OPTION_A", "value": "1" },
+      { "key": "OPTION_B", "value": "2" },
+      { "key": "OPTION_C", "value": "3" },
+      { "key": "OPTION_D", "value": "4" },
+      { "key": "OPTION_E", "value": "5" },
+      { "key": "OPTION_F", "value": "" },
+      { "key": "OPTION_G", "value": "" },
+      { "key": "OPTION_H", "value": "1 2" }
+    ]
+  },
+  {
+    "name": "loadEnv lets later files expand values loaded by earlier files",
+    "operation": "loadEnv",
+    "paths": ["base.env", "child.env"],
+    "files": [
+      { "path": "base.env", "type": "file", "content": "FOO=from_base" },
+      { "path": "child.env", "type": "file", "content": "BAR=$FOO" }
+    ],
+    "existingEnv": [],
+    "expected": [
+      { "key": "FOO", "value": "from_base" },
+      { "key": "BAR", "value": "from_base" }
+    ]
+  },
+  {
+    "name": "readFiles parses each file independently before merging",
+    "operation": "readFiles",
+    "paths": ["base.env", "child.env"],
+    "files": [
+      { "path": "base.env", "type": "file", "content": "FOO=from_base" },
+      { "path": "child.env", "type": "file", "content": "BAR=$FOO" }
+    ],
+    "existingEnv": [],
+    "expected": [
+      { "key": "FOO", "value": "from_base" },
+      { "key": "BAR", "value": "" }
+    ]
+  }
+]

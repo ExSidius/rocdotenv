@@ -46,6 +46,29 @@ def roc_env_files(files: list[Env]) -> str:
     return f"[{', '.join(roc_env(env) for env in files)}]"
 
 
+def roc_str_list(items: list[str]) -> str:
+    return f"[{', '.join(roc_str(item) for item in items)}]"
+
+
+def roc_fake_files(files: list[dict[str, Any]], fixtures: dict[str, str]) -> str:
+    entries = []
+
+    for item in files:
+        if item["type"] == "file":
+            content = (
+                fixtures[item["fixture"]] if "fixture" in item else item["content"]
+            )
+            source = f"File({roc_str(content)})"
+        elif item["type"] == "directory":
+            source = "Directory"
+        else:
+            raise ValueError(f"Unknown fake file type: {item['type']}")
+
+        entries.append(f"{{ path: {roc_str(item['path'])}, source: {source} }}")
+
+    return f"[{', '.join(entries)}]"
+
+
 def comment(text: str) -> str:
     safe = text.replace("\n", " ").replace("\r", " ")
     return f"# {safe}"
@@ -116,12 +139,36 @@ def roundtrip_expect(case: dict[str, Any], fixtures: dict[str, str]) -> list[str
     ]
 
 
+def io_expect(case: dict[str, Any], fixtures: dict[str, str]) -> list[str]:
+    paths = roc_str_list(case["paths"])
+    files = roc_fake_files(case["files"], fixtures)
+    existing_env = roc_env(case.get("existingEnv", []))
+    operation = case["operation"]
+
+    if operation not in ["readFiles", "loadEnv", "overloadEnv"]:
+        raise ValueError(f"Unknown I/O operation: {operation}")
+
+    if "expectedError" in case:
+        error = case["expectedError"]
+        expected = f'Err({error["tag"]}({roc_str(error["path"])}))'
+    else:
+        expected = f'Ok({roc_env(case["expected"])})'
+
+    return [
+        comment(case["name"]),
+        "expect",
+        f"    Dotenv.{operation}({paths}, {files}, {existing_env}) == {expected}",
+        "",
+    ]
+
+
 def main() -> None:
     fixtures = load_json("fixtures.json")
     parse_cases = load_json("parse.json")
     marshal_cases = load_json("marshal.json")
     apply_cases = load_json("apply.json")
     roundtrip_cases = load_json("roundtrip.json")
+    io_cases = load_json("io.json")
 
     lines = [
         "module []",
@@ -144,6 +191,9 @@ def main() -> None:
 
     for case in roundtrip_cases:
         lines.extend(roundtrip_expect(case, fixtures))
+
+    for case in io_cases:
+        lines.extend(io_expect(case, fixtures))
 
     OUTPUT.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
 

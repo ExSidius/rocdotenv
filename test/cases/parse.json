@@ -72,6 +72,12 @@
     "expected": [{ "key": "FOO", "value": "bar" }]
   },
   {
+    "name": "ignores inline comments after tabs",
+    "input": "FOO=bar\t# this is foo",
+    "existingEnv": [],
+    "expected": [{ "key": "FOO", "value": "bar" }]
+  },
+  {
     "name": "keeps hash characters in double quoted values",
     "input": "FOO=\"bar#baz\" # comment",
     "existingEnv": [],
@@ -100,6 +106,18 @@
     "input": "FOO=\"bar\\\\\"",
     "existingEnv": [],
     "expected": [{ "key": "FOO", "value": "bar\\" }]
+  },
+  {
+    "name": "rejects trailing characters after double quoted values",
+    "input": "FOO=\"bar\"junk",
+    "existingEnv": [],
+    "expectedError": "UnexpectedChar"
+  },
+  {
+    "name": "rejects trailing characters after single quoted values",
+    "input": "FOO='bar'junk",
+    "existingEnv": [],
+    "expectedError": "UnexpectedChar"
   },
   {
     "name": "trims leading whitespace before key",

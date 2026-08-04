@@ -53,6 +53,10 @@ expect
 expect
     Dotenv.parseString("FOO=bar # this is foo", []) == Ok([{ key: "FOO", value: "bar" }])
 
+# ignores inline comments after tabs
+expect
+    Dotenv.parseString("FOO=bar\t# this is foo", []) == Ok([{ key: "FOO", value: "bar" }])
+
 # keeps hash characters in double quoted values
 expect
     Dotenv.parseString("FOO=\"bar#baz\" # comment", []) == Ok([{ key: "FOO", value: "bar#baz" }])
@@ -72,6 +76,14 @@ expect
 # does not let trailing escaped backslash escape closing quote
 expect
     Dotenv.parseString("FOO=\"bar\\\\\"", []) == Ok([{ key: "FOO", value: "bar\\" }])
+
+# rejects trailing characters after double quoted values
+expect
+    Dotenv.parseString("FOO=\"bar\"junk", []) == Err(UnexpectedChar)
+
+# rejects trailing characters after single quoted values
+expect
+    Dotenv.parseString("FOO='bar'junk", []) == Err(UnexpectedChar)
 
 # trims leading whitespace before key
 expect
@@ -408,3 +420,39 @@ expect
 
         Err(_) ->
             Bool.false
+
+# readFiles defaults to .env
+expect
+    Dotenv.readFiles([], [{ path: ".env", source: File("OPTION_A=1\nOPTION_B=2\nOPTION_C= 3\nOPTION_D =4\nOPTION_E = 5\nOPTION_F = \nOPTION_G=\nOPTION_H=1 2") }], []) == Ok([{ key: "OPTION_A", value: "1" }, { key: "OPTION_B", value: "2" }, { key: "OPTION_C", value: "3" }, { key: "OPTION_D", value: "4" }, { key: "OPTION_E", value: "5" }, { key: "OPTION_F", value: "" }, { key: "OPTION_G", value: "" }, { key: "OPTION_H", value: "1 2" }])
+
+# readFiles returns missing file error
+expect
+    Dotenv.readFiles(["missing.env"], [], []) == Err(FileNotFound("missing.env"))
+
+# readFiles returns directory error
+expect
+    Dotenv.readFiles(["fixtures/"], [{ path: "fixtures/", source: Directory }], []) == Err(IsDirectory("fixtures/"))
+
+# readFiles merges multiple files with later values winning
+expect
+    Dotenv.readFiles(["plain.env", "exported.env"], [{ path: "plain.env", source: File("OPTION_A=1\nOPTION_B=2\nOPTION_C= 3\nOPTION_D =4\nOPTION_E = 5\nOPTION_F = \nOPTION_G=\nOPTION_H=1 2") }, { path: "exported.env", source: File("export OPTION_A=2\nexport OPTION_B='\\n'\n") }], []) == Ok([{ key: "OPTION_C", value: "3" }, { key: "OPTION_D", value: "4" }, { key: "OPTION_E", value: "5" }, { key: "OPTION_F", value: "" }, { key: "OPTION_G", value: "" }, { key: "OPTION_H", value: "1 2" }, { key: "OPTION_A", value: "2" }, { key: "OPTION_B", value: "\\n" }])
+
+# readFiles uses explicit existing env for expansion fallback
+expect
+    Dotenv.readFiles(["substitutions.env"], [{ path: "substitutions.env", source: File("OPTION_A=1\nOPTION_B=\${OPTION_A}\nOPTION_C=$OPTION_B\nOPTION_D=\${OPTION_A}\${OPTION_B}\nOPTION_E=\${OPTION_NOT_DEFINED}\nOPTION_F=\${GLOBAL_OPTION}\n") }], [{ key: "GLOBAL_OPTION", value: "global" }]) == Ok([{ key: "OPTION_A", value: "1" }, { key: "OPTION_B", value: "1" }, { key: "OPTION_C", value: "1" }, { key: "OPTION_D", value: "11" }, { key: "OPTION_E", value: "" }, { key: "OPTION_F", value: "global" }])
+
+# loadEnv preserves existing values
+expect
+    Dotenv.loadEnv(["plain.env"], [{ path: "plain.env", source: File("OPTION_A=1\nOPTION_B=2\nOPTION_C= 3\nOPTION_D =4\nOPTION_E = 5\nOPTION_F = \nOPTION_G=\nOPTION_H=1 2") }], [{ key: "OPTION_A", value: "do_not_override" }, { key: "OPTION_B", value: "" }]) == Ok([{ key: "OPTION_A", value: "do_not_override" }, { key: "OPTION_B", value: "" }, { key: "OPTION_C", value: "3" }, { key: "OPTION_D", value: "4" }, { key: "OPTION_E", value: "5" }, { key: "OPTION_F", value: "" }, { key: "OPTION_G", value: "" }, { key: "OPTION_H", value: "1 2" }])
+
+# overloadEnv overrides existing values
+expect
+    Dotenv.overloadEnv(["plain.env"], [{ path: "plain.env", source: File("OPTION_A=1\nOPTION_B=2\nOPTION_C= 3\nOPTION_D =4\nOPTION_E = 5\nOPTION_F = \nOPTION_G=\nOPTION_H=1 2") }], [{ key: "OPTION_A", value: "do_not_override" }]) == Ok([{ key: "OPTION_A", value: "1" }, { key: "OPTION_B", value: "2" }, { key: "OPTION_C", value: "3" }, { key: "OPTION_D", value: "4" }, { key: "OPTION_E", value: "5" }, { key: "OPTION_F", value: "" }, { key: "OPTION_G", value: "" }, { key: "OPTION_H", value: "1 2" }])
+
+# loadEnv lets later files expand values loaded by earlier files
+expect
+    Dotenv.loadEnv(["base.env", "child.env"], [{ path: "base.env", source: File("FOO=from_base") }, { path: "child.env", source: File("BAR=$FOO") }], []) == Ok([{ key: "FOO", value: "from_base" }, { key: "BAR", value: "from_base" }])
+
+# readFiles parses each file independently before merging
+expect
+    Dotenv.readFiles(["base.env", "child.env"], [{ path: "base.env", source: File("FOO=from_base") }, { path: "child.env", source: File("BAR=$FOO") }], []) == Ok([{ key: "FOO", value: "from_base" }, { key: "BAR", value: "" }])
