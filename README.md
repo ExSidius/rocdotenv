@@ -58,6 +58,7 @@ expectations.
 
 `Dotenv.roc` is the public facade. The focused modules are:
 
+- `CliAdapter.roc`
 - `Types.roc`
 - `EnvOps.roc`
 - `Expansion.roc`
@@ -65,12 +66,39 @@ expectations.
 - `Marshaller.roc`
 - `PureFileLoading.roc`
 
+`cli.roc` is a runnable app that performs real CLI/file/environment effects at
+the edge and delegates dotenv behavior to the pure modules.
+
+## CLI
+
+Run the side-effecting CLI adapter with:
+
+```sh
+roc cli.roc -- [--overload] [file ...]
+```
+
+Examples:
+
+```sh
+roc cli.roc -- .env .env.local
+roc cli.roc -- --overload .env
+roc cli.roc -- --help
+```
+
+The CLI reads real dotenv files, reads the current process environment for
+expansion and load/overload behavior, and prints the resulting deterministic
+dotenv content to stdout.
+
+A standalone CLI process cannot mutate its parent shell environment. It can only
+read its own environment and print or pass along derived values.
+
 ## Package Checks
 
 `main.roc` is the package entry point and currently exposes the `Dotenv` module.
 
 ```sh
 roc check main.roc
+roc check cli.roc
 roc docs main.roc
 ```
 

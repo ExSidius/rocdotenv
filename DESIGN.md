@@ -89,11 +89,15 @@ plain record/list representation that makes tests and interop straightforward.
 semantic model:
 
 - `Types.roc`: shared aliases for entries, environments, fake files, and errors.
+- `CliAdapter.roc`: pure CLI argument/config handling and conversion into the
+  existing fake-file/environment model.
 - `EnvOps.roc`: lookup, replace-by-key insertion, merging, and load policy application.
 - `Expansion.roc`: variable expansion and expansion-name lookup.
 - `Parser.roc`: statement scanning and source parsing.
 - `Marshaller.roc`: deterministic dotenv serialization.
 - `PureFileLoading.roc`: pure fake file-system read/load/overload behavior.
+- `cli.roc`: effectful CLI app that reads args, files, and process env, then
+  delegates behavior to the pure modules.
 
 ## Data Model
 
@@ -242,8 +246,14 @@ Purely modeled behaviors:
 Deferred adapter path:
 
 1. Keep fake file-system and fake-env JSON cases as the contract.
-2. Add platform or CLI adapters later.
-3. Keep those adapters thin wrappers over the pure package functions.
+2. Keep platform and CLI adapters thin wrappers over the pure package functions.
+3. Add host-specific behavior only at the app/platform edge.
+
+`cli.roc` is the first side-effecting adapter. It uses the selected CLI platform
+to read command-line arguments, read files, read the current process
+environment, and write stdout/stderr. It cannot mutate the parent shell
+environment; no standalone child process can. Future command-exec behavior could
+apply dotenv values to a subprocess environment instead.
 
 ## Test Strategy
 

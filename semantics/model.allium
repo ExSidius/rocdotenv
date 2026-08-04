@@ -83,6 +83,21 @@ value LoadPolicy {
     mode: preserve_existing | override_existing
 }
 
+value CliConfig {
+    paths: List<FakePath>
+    policy: LoadPolicy
+}
+
+entity ParsedArgs {
+    kind: Run | Help
+}
+
+variant Run : ParsedArgs {
+    config: CliConfig
+}
+
+variant Help : ParsedArgs {}
+
 value ParseError {
     kind: unexpected_char | unterminated_quote
 }
@@ -95,4 +110,9 @@ value ReadError {
 
 value MarshalError {
     kind: marshal_failed
+}
+
+value CliError {
+    kind: unknown_flag
+    flag: String
 }
