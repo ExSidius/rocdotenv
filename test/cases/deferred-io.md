@@ -1,4 +1,4 @@
-# Deferred I/O Contract Cases
+# I/O Contract Cases and Remaining Adapters
 
 The JSON contract suite is intentionally pure: all tests use explicit strings
 and key/value lists instead of reading files or mutating the process
@@ -15,5 +15,11 @@ cases in `test/cases/io.json`:
 - Actual process environment values can be used as a fallback for variable
   expansion.
 
-The remaining deferred work is adapting those pure semantics to real
-file-system and process-environment effects through a Roc platform or CLI app.
+`cli.roc` now adapts part of those pure semantics to real side effects: command
+line arguments, file reads, process-environment reads, stdout, and stderr.
+
+Remaining adapter work:
+
+- Process-environment mutation inside a host process.
+- Writing dotenv files (`Write` / `SafeWrite` parity).
+- Executing a subprocess with a dotenv-derived environment.

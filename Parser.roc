@@ -94,13 +94,20 @@ stripExport = |line|
     else
         trimmed
 
-stripInlineComment = |value|
-    when Str.split_first(value, " #") is
-        Ok(parts) ->
-            parts.before
+isCommentPrefixSpace = |byte| byte == 32 or byte == 9
 
-        Err(_) ->
-            value
+stripInlineCommentBytes = |bytes, out, previousWasSpace|
+    when bytes is
+        [] ->
+            bytesToStr(out)
+
+        [35, ..] if previousWasSpace ->
+            bytesToStr(out)
+
+        [byte, .. as rest] ->
+            stripInlineCommentBytes(rest, List.concat(out, [byte]), isCommentPrefixSpace(byte))
+
+stripInlineComment = |value| stripInlineCommentBytes(Str.to_utf8(value), [], Bool.false)
 
 decodeDoubleQuotedBytes = |bytes, out|
     when bytes is
@@ -124,6 +131,11 @@ decodeDoubleQuotedBytes = |bytes, out|
 
 decodeDoubleQuoted = |value| bytesToStr(decodeDoubleQuotedBytes(Str.to_utf8(value), []))
 
+isAllowedQuotedRest = |rest|
+    trimmed = Str.trim(rest)
+
+    Str.is_empty(trimmed) or Str.starts_with(trimmed, "#")
+
 parseValue = |rawValue, expansionEnv|
     value = Str.trim(rawValue)
 
@@ -132,7 +144,10 @@ parseValue = |rawValue, expansionEnv|
 
         when collectQuoted(withoutPrefix, 39) is
             Ok(parsed) ->
-                Ok(parsed.value)
+                if isAllowedQuotedRest(bytesToStr(parsed.rest)) then
+                    Ok(parsed.value)
+                else
+                    Err(UnexpectedChar)
 
             Err(_) ->
                 Err(UnterminatedQuote)
@@ -141,7 +156,10 @@ parseValue = |rawValue, expansionEnv|
 
         when collectQuoted(withoutPrefix, 34) is
             Ok(parsed) ->
-                Ok(Expansion.expandVariables(decodeDoubleQuoted(parsed.value), expansionEnv))
+                if isAllowedQuotedRest(bytesToStr(parsed.rest)) then
+                    Ok(Expansion.expandVariables(decodeDoubleQuoted(parsed.value), expansionEnv))
+                else
+                    Err(UnexpectedChar)
 
             Err(_) ->
                 Err(UnterminatedQuote)

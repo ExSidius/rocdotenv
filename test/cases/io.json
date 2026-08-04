@@ -131,7 +131,7 @@
     ]
   },
   {
-    "name": "readFiles lets later files expand values loaded by earlier files",
+    "name": "readFiles parses each file independently before merging",
     "operation": "readFiles",
     "paths": ["base.env", "child.env"],
     "files": [
@@ -141,7 +141,7 @@
     "existingEnv": [],
     "expected": [
       { "key": "FOO", "value": "from_base" },
-      { "key": "BAR", "value": "from_base" }
+      { "key": "BAR", "value": "" }
     ]
   }
 ]

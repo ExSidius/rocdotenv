@@ -53,6 +53,10 @@ expect
 expect
     Dotenv.parseString("FOO=bar # this is foo", []) == Ok([{ key: "FOO", value: "bar" }])
 
+# ignores inline comments after tabs
+expect
+    Dotenv.parseString("FOO=bar\t# this is foo", []) == Ok([{ key: "FOO", value: "bar" }])
+
 # keeps hash characters in double quoted values
 expect
     Dotenv.parseString("FOO=\"bar#baz\" # comment", []) == Ok([{ key: "FOO", value: "bar#baz" }])
@@ -72,6 +76,14 @@ expect
 # does not let trailing escaped backslash escape closing quote
 expect
     Dotenv.parseString("FOO=\"bar\\\\\"", []) == Ok([{ key: "FOO", value: "bar\\" }])
+
+# rejects trailing characters after double quoted values
+expect
+    Dotenv.parseString("FOO=\"bar\"junk", []) == Err(UnexpectedChar)
+
+# rejects trailing characters after single quoted values
+expect
+    Dotenv.parseString("FOO='bar'junk", []) == Err(UnexpectedChar)
 
 # trims leading whitespace before key
 expect
@@ -441,6 +453,6 @@ expect
 expect
     Dotenv.loadEnv(["base.env", "child.env"], [{ path: "base.env", source: File("FOO=from_base") }, { path: "child.env", source: File("BAR=$FOO") }], []) == Ok([{ key: "FOO", value: "from_base" }, { key: "BAR", value: "from_base" }])
 
-# readFiles lets later files expand values loaded by earlier files
+# readFiles parses each file independently before merging
 expect
-    Dotenv.readFiles(["base.env", "child.env"], [{ path: "base.env", source: File("FOO=from_base") }, { path: "child.env", source: File("BAR=$FOO") }], []) == Ok([{ key: "FOO", value: "from_base" }, { key: "BAR", value: "from_base" }])
+    Dotenv.readFiles(["base.env", "child.env"], [{ path: "base.env", source: File("FOO=from_base") }, { path: "child.env", source: File("BAR=$FOO") }], []) == Ok([{ key: "FOO", value: "from_base" }, { key: "BAR", value: "" }])

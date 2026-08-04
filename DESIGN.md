@@ -25,8 +25,8 @@ The package should match `godotenv` for:
 - Roundtrip behavior over upstream fixtures.
 
 File-system and process-environment behavior is modeled with explicit fake
-inputs in `test/cases/io.json`. Real side-effect adapters are deferred and
-tracked in `test/cases/deferred-io.md`.
+inputs in `test/cases/io.json`. `cli.roc` is the first real side-effecting
+adapter, and remaining gaps are tracked in `test/cases/deferred-io.md`.
 
 ## Semantic Model
 
@@ -51,8 +51,9 @@ model rather than the source of truth for the model.
 package [Dotenv] {}
 ```
 
-The reusable core should stay pure. File loading, process environment mutation,
-and CLI behavior should live in later adapters or apps.
+The reusable core should stay pure. File loading, process environment reads,
+stdout/stderr writes, subprocess execution, and any environment mutation should
+live in adapters or apps.
 
 Current public surface:
 
@@ -243,7 +244,7 @@ Purely modeled behaviors:
 - Process env preserve/override.
 - Process env fallback during variable expansion.
 
-Deferred adapter path:
+Adapter path:
 
 1. Keep fake file-system and fake-env JSON cases as the contract.
 2. Keep platform and CLI adapters thin wrappers over the pure package functions.

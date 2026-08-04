@@ -44,9 +44,7 @@ readFiles = |paths, files, existingEnv|
                             Err(err)
 
                         Ok(source) ->
-                            expansionEnv = List.concat(env, existingEnv)
-
-                            when Parser.parseString(source, expansionEnv) is
+                            when Parser.parseString(source, existingEnv) is
                                 Err(err) ->
                                     Err(err)
 

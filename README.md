@@ -39,19 +39,20 @@ independent of the current Roc API.
 The corpus currently covers parser, marshal, pure load/apply, and roundtrip
 cases translated from upstream `godotenv`.
 Fake file-system and process-environment behavior is covered by
-`test/cases/io.json`; real platform adapters are tracked in
-`test/cases/deferred-io.md`.
+`test/cases/io.json`; the CLI adapter is tracked alongside remaining deferred
+I/O work in `test/cases/deferred-io.md`.
 
 Generate the Roc adapter tests with:
 
 ```sh
 uv run python scripts/generate_roc_tests.py
-roc format Dotenv.roc ContractTest.roc
+roc format main.roc Dotenv.roc Types.roc EnvOps.roc Expansion.roc Parser.roc Marshaller.roc PureFileLoading.roc CliAdapter.roc cli.roc ContractTest.roc CliAdapterTest.roc
 roc test ContractTest.roc
+roc test CliAdapterTest.roc
 ```
 
 `ContractTest.roc` is generated from the JSON cases and adapts them to the
-current `Dotenv` module shape. The generated suite currently has 100
+current `Dotenv` module shape. The generated suite currently has 103
 expectations.
 
 ## Implementation Layout
@@ -103,8 +104,8 @@ roc docs main.roc
 ```
 
 The public module is implemented against the pure contract suite. File-system
-and process-environment behavior is modeled with explicit fake inputs; real I/O
-adapters remain deferred.
+and process-environment behavior is modeled with explicit fake inputs; `cli.roc`
+is the first real side-effecting adapter.
 
 ## License
 

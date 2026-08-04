@@ -20,8 +20,8 @@ usage =
     """
     rocdotenv [--overload] [--help] [--] [file ...]
 
-    Reads dotenv files, applies them to the current process environment, and
-    prints the resulting deterministic dotenv content to stdout.
+    Reads dotenv files, combines them with the current process environment, and
+    prints deterministic dotenv content to stdout.
 
     Options:
       --overload  Override existing environment values

@@ -48,7 +48,7 @@ rule ReadFilesParsesInPathOrder {
     ensures:
         each file is parsed in effective_paths order
     ensures:
-        each file expands against read_entries_before_file plus existing_env
+        each file expands against existing_env only
 }
 
 rule ReadFilesMergesWithLaterFilesWinning {
